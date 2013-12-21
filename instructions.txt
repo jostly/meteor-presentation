@@ -1,0 +1,122 @@
+Förberedelser
+=============
+
+Rensa databasen: 
+
+> meteor reset
+
+Steg -1
+-------
+
+main.html:
+
+{{> page1}}
+
+
+Steg 0
+------
+
+Lägg till features:
+
+models.js:
+
+Features = new Meteor.Collection("features");
+
+1.js:
+
+Template.page1.features = function () {
+	return Features.find({});
+}
+
+
+1.html:
+
+<ul>
+{{#each features}}
+	{{> feature}}
+{{/each}}
+</ul>
+
+
+<template name="feature">
+	<li class="feature">{{text}}</li>
+</template>
+
+
+Steg 1
+------
+
+Visa sida 1. Det finns inga features. Lägg till en feature
+i server startup:
+
+	if (!Features.findOne({})) {
+		Features.insert({
+			text: "Automatisk uppdatering av appen när källkoden ändras"
+		});
+	}
+
+Visa att appen har startats om automatiskt, med nya uppdateringen.
+
+Steg 2
+------
+
+Lägg till en till feature via Javascriptkonsolen, för att visa att det ÄR samma API både på klient och server.
+
+Features.insert({ text: "Javascript hela vägen - samma API för klient och server" });
+
+Berätta att det går att stänga av direktaccess till collections, så att klienter inte kan pilla direkt i databasen.
+
+
+Steg 3
+------
+
+Synkronisering mellan klienter. Visa IP-adress för servern:
+> ifconfig | grep inet | grep 192 | awk '{ print $2; }'
+
+Lägg till like-ability:
+
+i template "feature":
+
+{{#if likes}} <img src="images/like.png" width="32" height="32"/>{{ likes }}{{/if}}
+
+i li-taggen: id="{{_id}}"
+
+i javascript Template["1"].events({
+'click .feature': function (event) {
+	var li = event.currentTarget;
+	Features.update(li.id, {$inc: { likes: 1 }});
+}
+});
+
+
+Sortera i fallande ordning på likes:
+
+Ändra 
+	Features.find({}); 
+till 
+	Features.find({}, { sort: { likes: -1 }});
+
+
+Steg X
+------
+
+Flera sidor
+
+client.js:
+
+Meteor.startup(function () {
+	setPage(1);
+
+	var presentation = Meteor.render(function () {
+		var page = "page" + Session.get("page");
+		return Template[page]();
+	});
+
+	document.body.appendChild(presentation);
+});
+
+window.setPage = function(page) { 
+	Session.set("page", page);
+}
+
+
